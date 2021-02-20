@@ -3,15 +3,57 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://iolh.github.io/categories/</loc>
+    <loc>https://iolh.github.io/about/</loc>
+    <lastmod>2021-02-20T16:50:18+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/books/</loc>
+    <lastmod>2021-02-20T16:50:01+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/posts/</loc>
+    <lastmod>2020-12-21T23:24:17+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/tags/react/</loc>
+    <lastmod>2020-12-21T23:24:17+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://iolh.github.io/tags/</loc>
+    <lastmod>2020-12-21T23:24:17+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/tags/%E5%89%8D%E7%AB%AF/</loc>
+    <lastmod>2020-12-21T23:24:17+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/posts/react-essentials/</loc>
+    <lastmod>2020-12-21T23:24:17+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://iolh.github.io/</loc>
+    <lastmod>2020-12-21T23:24:17+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/tags/theme/</loc>
+    <lastmod>2019-03-31T17:49:40+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/posts/theme-preview/</loc>
+    <lastmod>2019-03-31T17:49:40+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://iolh.github.io/categories/</loc>
   </url>
   
 </urlset>

@@ -1,30 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>风谷之声</title>
-    <link>https://iolh.github.io/</link>
-    <description>Recent content on 风谷之声</description>
+    <title>Posts on 风谷之声</title>
+    <link>https://iolh.github.io/posts/</link>
+    <description>Recent content in Posts on 风谷之声</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 21 Dec 2020 23:24:17 +0000</lastBuildDate><atom:link href="https://iolh.github.io/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>About</title>
-      <link>https://iolh.github.io/about/</link>
-      <pubDate>Sat, 20 Feb 2021 16:50:18 +0800</pubDate>
-      
-      <guid>https://iolh.github.io/about/</guid>
-      <description>It&amp;rsquo;s me, iolh ! </description>
-    </item>
-    
-    <item>
-      <title>Books</title>
-      <link>https://iolh.github.io/books/</link>
-      <pubDate>Sat, 20 Feb 2021 16:50:01 +0800</pubDate>
-      
-      <guid>https://iolh.github.io/books/</guid>
-      <description>寂寂寥寥扬子居，年年岁岁一床书</description>
-    </item>
-    
+    <lastBuildDate>Mon, 21 Dec 2020 23:24:17 +0000</lastBuildDate><atom:link href="https://iolh.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>构建自己的React</title>
       <link>https://iolh.github.io/posts/react-essentials/</link>

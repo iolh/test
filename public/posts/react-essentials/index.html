@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="刘至" />
+	
+	
+	
+	<title>构建自己的React ｜ 风谷之声</title>
+	
+    
+    
+    <meta name="description" content="构建自己的React The createElement Function The render Function Concurrent Mode Fibers Render and Commit Phases Reconciliation Function Components Hooks 让我们开始吧！ const element = &amp;lt;h1 title=&amp;#34;foo&amp;#34;&amp;gt;Hello&amp;lt;/h1&amp;gt; const container = document.getElementById(&amp;#34;root&amp;#34;) ReactDOM.render(element, container) 上面是一段简单的react代码，创建一个h1元素，然后添加到root容器节点下。我们知道jsx会被babel解" />
+    
+
+    
+    
+    <meta name="keywords" content="Hugo, theme, zozo" />
+    
+
+	
+    
+    <link rel="shortcut icon" href="https://iolh.github.io/images/favicon.ico" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="https://iolh.github.io/css/normalize.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.0/animate.min.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="https://iolh.github.io/css/zozo.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="https://iolh.github.io/css/highlight.css" />
+
+    
+    
+</head>
+
+<body>
+    <div class="main animate__animated animate__fadeInDown">
+        <div class="nav_container animated fadeInDown">
+    <div class="site_nav" id="site_nav">
+        <ul>
+            
+            <li>
+                <a href="/">首页</a>
+            </li>
+            
+            <li>
+                <a href="/posts/">归档</a>
+            </li>
+            
+            <li>
+                <a href="/tags/">标签</a>
+            </li>
+            
+            <li>
+                <a href="/books">读书</a>
+            </li>
+            
+            <li>
+                <a href="/about">关于</a>
+            </li>
+            
+        </ul>
+    </div>
+    <div class="menu_icon">
+        <a id="menu_icon"><i class="ri-menu-line"></i></a>
+    </div>
+</div>
+        <div class="header animated fadeInDown">
+    <div class="site_title_container">
+        <div class="site_title">
+            <h1>
+                <a href="https://iolh.github.io/">
+                    <span>风谷之声</span>
+                </a>
+            </h1>
+        </div>
+        <div class="description">
+            <p class="sub_title">平明寻白羽</p>
+            <div class="my_socials">
+                
+                
+                <a href="https://github.com/iolh" title="github" target="_blank"><i class="ri-github-fill"></i></a>
+                
+                
+                <a href="https://iolh.github.io/index.xml" type="application/rss+xml" title="rss" target="_blank"><i
+                        class="ri-rss-fill"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="content">
+            <div class="post_page">
+                <div class="post animate__animated animate__fadeInDown">
+                    <div class="post_title post_detail_title">
+                        <h2><a href='/posts/react-essentials/'>构建自己的React</a></h2>
+                        <span class="date">2020.12.21</span>
+                    </div>
+                    <div class="post_content markdown"><h2 id="构建自己的react">构建自己的React</h2>
+<ol>
+<li>
+<p>The createElement Function</p>
+</li>
+<li>
+<p>The render Function</p>
+</li>
+<li>
+<p>Concurrent Mode</p>
+</li>
+<li>
+<p>Fibers</p>
+</li>
+<li>
+<p>Render and Commit Phases</p>
+</li>
+<li>
+<p>Reconciliation</p>
+</li>
+<li>
+<p>Function Components</p>
+</li>
+<li>
+<p>Hooks</p>
+</li>
+</ol>
+<h2 id="让我们开始吧">让我们开始吧！</h2>
+<div class="highlight"><pre class="chroma"><code class="language-jsx" data-lang="jsx"><span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="p">&lt;</span><span class="nt">h1</span> <span class="na">title</span><span class="o">=</span><span class="s">&#34;foo&#34;</span><span class="p">&gt;</span><span class="nx">Hello</span><span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+
+<span class="kr">const</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&#34;root&#34;</span><span class="p">)</span>
+
+<span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span>
+
+</code></pre></div><p>上面是一段简单的react代码，创建一个h1元素，然后添加到root容器节点下。我们知道jsx会被babel解析成React.createElement，本质上是一次函数调用：</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span>
+  <span class="s2">&#34;h1&#34;</span><span class="p">,</span>
+  <span class="p">{</span> <span class="nx">title</span><span class="o">:</span> <span class="s2">&#34;foo&#34;</span> <span class="p">},</span>
+  <span class="s2">&#34;Hello&#34;</span>
+<span class="p">)</span>
+
+</code></pre></div><p>这次函数调用生成的element对象，具有两个 properties: type and props：</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">type</span><span class="o">:</span> <span class="s2">&#34;h1&#34;</span><span class="p">,</span>
+  <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+    <span class="nx">title</span><span class="o">:</span> <span class="s2">&#34;foo&#34;</span><span class="p">,</span>
+    <span class="nx">children</span><span class="o">:</span> <span class="s2">&#34;Hello&#34;</span><span class="p">,</span>
+  <span class="p">},</span>
+<span class="p">}</span>
+
+</code></pre></div><p>此外，我们知道ReactDom.render是react更改dom的方法，我们自己来实现一下更新dom：</p>
+<ol>
+<li>首先是根据element对象type属性，创建dom节点，即h1标签。</li>
+<li>将element对象非children所有属性赋给创建的dom节点。</li>
+<li>element对象中还有一个特殊的属性children，我们将根据它创建h1元素的子节点，这里是一个文本节点。</li>
+<li>将创建好的dom节点追加到root容器节点下。</li>
+</ol>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">node</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="nx">element</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span>
+<span class="nx">node</span><span class="p">[</span><span class="s2">&#34;title&#34;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">title</span>
+
+<span class="kr">const</span> <span class="nx">text</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="s2">&#34;&#34;</span><span class="p">)</span>
+<span class="nx">text</span><span class="p">[</span><span class="s2">&#34;nodeValue&#34;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span>
+
+<span class="kr">const</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&#34;root&#34;</span><span class="p">)</span>
+
+<span class="nx">node</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span>
+<span class="nx">container</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">node</span><span class="p">)</span>
+
+</code></pre></div><p>好了，到这里热身结束，让我们步入正题，一窥React.createElement以及React.render的真面目吧！</p>
+<h2 id="实现reactcreateelement方法">实现React.createElement方法</h2>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span>
+  <span class="s2">&#34;div&#34;</span><span class="p">,</span>
+  <span class="p">{</span> <span class="nx">id</span><span class="o">:</span> <span class="s2">&#34;foo&#34;</span> <span class="p">},</span>
+  <span class="nx">React</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&#34;a&#34;</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="s2">&#34;bar&#34;</span><span class="p">),</span>
+  <span class="nx">React</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&#34;b&#34;</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="kr">const</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&#34;root&#34;</span><span class="p">)</span>
+<span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span>
+
+</code></pre></div><p>调用React.createElment,对props使用扩展运算符，对children使用剩余运算符。</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">createElement</span><span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">props</span><span class="p">,</span> <span class="p">...</span><span class="nx">children</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">type</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="p">...</span><span class="nx">props</span><span class="p">,</span>
+      <span class="nx">children</span><span class="p">,</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>创建元素对象如下:</p>
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="err">//</span> <span class="err">createElement(</span><span class="s2">&#34;div&#34;</span><span class="err">,</span> <span class="kc">null</span><span class="err">,</span> <span class="err">a,</span> <span class="err">b)</span>
+<span class="p">{</span>
+  <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;div&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;props&#34;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&#34;children&#34;</span><span class="p">:</span> <span class="p">[</span><span class="err">a</span><span class="p">,</span> <span class="err">b</span><span class="p">]</span> <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>遍历子元素</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">createElement</span><span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">props</span><span class="p">,</span> <span class="p">...</span><span class="nx">children</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">type</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="p">...</span><span class="nx">props</span><span class="p">,</span>
+      <span class="nx">children</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">child</span> <span class="p">=&gt;</span>
+        <span class="k">typeof</span> <span class="nx">child</span> <span class="o">===</span> <span class="s2">&#34;object&#34;</span>
+          <span class="o">?</span> <span class="nx">child</span>
+          <span class="o">:</span> <span class="nx">createTextElement</span><span class="p">(</span><span class="nx">child</span><span class="p">)</span>
+      <span class="p">),</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">createTextElement</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">type</span><span class="o">:</span> <span class="s2">&#34;TEXT_ELEMENT&#34;</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="nx">nodeValue</span><span class="o">:</span> <span class="nx">text</span><span class="p">,</span>
+      <span class="nx">children</span><span class="o">:</span> <span class="p">[],</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>使用自定义的Didact.createElement取代React.createElement</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">Didact</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">createElement</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="nx">Didact</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span>
+  <span class="s2">&#34;div&#34;</span><span class="p">,</span>
+  <span class="p">{</span> <span class="nx">id</span><span class="o">:</span> <span class="s2">&#34;foo&#34;</span> <span class="p">},</span>
+  <span class="nx">Didact</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&#34;a&#34;</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="s2">&#34;bar&#34;</span><span class="p">),</span>
+  <span class="nx">Didact</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&#34;b&#34;</span><span class="p">)</span>
+<span class="p">)</span>
+
+</code></pre></div><p>让jsx支持自定义的Didact.createElement</p>
+<div class="highlight"><pre class="chroma"><code class="language-jsx" data-lang="jsx"><span class="cm">/** @jsx Didact.createElement */</span>
+<span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&#34;foo&#34;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">a</span><span class="p">&gt;</span><span class="nx">bar</span><span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">b</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">)</span>
+
+</code></pre></div><p>完整代码如下</p>
+<div class="highlight"><pre class="chroma"><code class="language-jsx" data-lang="jsx"><span class="kd">function</span> <span class="nx">createElement</span><span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">props</span><span class="p">,</span> <span class="p">...</span><span class="nx">children</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">type</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="p">...</span><span class="nx">props</span><span class="p">,</span>
+      <span class="nx">children</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">child</span> <span class="p">=&gt;</span>
+        <span class="k">typeof</span> <span class="nx">child</span> <span class="o">===</span> <span class="s2">&#34;object&#34;</span>
+          <span class="o">?</span> <span class="nx">child</span>
+          <span class="o">:</span> <span class="nx">createTextElement</span><span class="p">(</span><span class="nx">child</span><span class="p">)</span>
+      <span class="p">),</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">createTextElement</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">type</span><span class="o">:</span> <span class="s2">&#34;TEXT_ELEMENT&#34;</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="nx">nodeValue</span><span class="o">:</span> <span class="nx">text</span><span class="p">,</span>
+      <span class="nx">children</span><span class="o">:</span> <span class="p">[],</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kr">const</span> <span class="nx">Didact</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">createElement</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="nx">Didact</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span>
+  <span class="s2">&#34;div&#34;</span><span class="p">,</span>
+  <span class="p">{</span> <span class="nx">id</span><span class="o">:</span> <span class="s2">&#34;foo&#34;</span> <span class="p">},</span>
+  <span class="nx">Didact</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&#34;a&#34;</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="s2">&#34;bar&#34;</span><span class="p">),</span>
+  <span class="nx">Didact</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&#34;b&#34;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="cm">/** @jsx Didact.createElement */</span>
+<span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&#34;foo&#34;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">a</span><span class="p">&gt;</span><span class="nx">bar</span><span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">b</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">)</span>
+
+<span class="kr">const</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&#34;root&#34;</span><span class="p">)</span>
+<span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span>
+
+</code></pre></div><h2 id="实现reactdomrender方法">实现ReactDOM.render方法</h2>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">dom</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="nx">element</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span>
+  <span class="nx">container</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">dom</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><p>加入一点递归</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">dom</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="nx">element</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span>
+  <span class="c1">// add
+</span><span class="c1"></span>   <span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">child</span> <span class="p">=&gt;</span>
+    <span class="nx">render</span><span class="p">(</span><span class="nx">child</span><span class="p">,</span> <span class="nx">dom</span><span class="p">)</span>
+  <span class="p">)</span>
+    
+  <span class="nx">container</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">dom</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><p>处理文本元素</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">dom</span> <span class="o">=</span>
+    <span class="nx">element</span><span class="p">.</span><span class="nx">type</span> <span class="o">==</span> <span class="s2">&#34;TEXT_ELEMENT&#34;</span>
+      <span class="o">?</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="s2">&#34;&#34;</span><span class="p">)</span>
+      <span class="o">:</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="nx">element</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span>
+
+</code></pre></div><p>把props属性赋给创建的node节点</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kr">const</span> <span class="nx">isProperty</span> <span class="o">=</span> <span class="nx">key</span> <span class="p">=&gt;</span> <span class="nx">key</span> <span class="o">!==</span> <span class="s2">&#34;children&#34;</span> <span class="c1">// 非children的props作为过滤条件
+</span><span class="c1"></span><span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">isProperty</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">name</span> <span class="p">=&gt;</span> <span class="p">{</span>
+    <span class="nx">dom</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span>
+  <span class="p">})</span>
+
+</code></pre></div><p>完整代码如下:</p>
+<div class="highlight"><pre class="chroma"><code class="language-jsx" data-lang="jsx"><span class="kd">function</span> <span class="nx">createElement</span><span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">props</span><span class="p">,</span> <span class="p">...</span><span class="nx">children</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">type</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="p">...</span><span class="nx">props</span><span class="p">,</span>
+      <span class="nx">children</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">child</span> <span class="p">=&gt;</span>
+        <span class="k">typeof</span> <span class="nx">child</span> <span class="o">===</span> <span class="s2">&#34;object&#34;</span>
+          <span class="o">?</span> <span class="nx">child</span>
+          <span class="o">:</span> <span class="nx">createTextElement</span><span class="p">(</span><span class="nx">child</span><span class="p">)</span>
+      <span class="p">),</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">createTextElement</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="nx">type</span><span class="o">:</span> <span class="s2">&#34;TEXT_ELEMENT&#34;</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="nx">nodeValue</span><span class="o">:</span> <span class="nx">text</span><span class="p">,</span>
+      <span class="nx">children</span><span class="o">:</span> <span class="p">[],</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">dom</span> <span class="o">=</span>
+    <span class="nx">element</span><span class="p">.</span><span class="nx">type</span> <span class="o">==</span> <span class="s2">&#34;TEXT_ELEMENT&#34;</span>
+      <span class="o">?</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="s2">&#34;&#34;</span><span class="p">)</span>
+      <span class="o">:</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="nx">element</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span>
+
+  <span class="c1">// 非子元素属性直接赋给dom节点
+</span><span class="c1"></span>  <span class="kr">const</span> <span class="nx">isProperty</span> <span class="o">=</span> <span class="nx">key</span> <span class="p">=&gt;</span> <span class="nx">key</span> <span class="o">!==</span> <span class="s2">&#34;children&#34;</span>
+  <span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">isProperty</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">name</span> <span class="p">=&gt;</span> <span class="p">{</span>
+      <span class="nx">dom</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span>
+    <span class="p">})</span>
+
+  <span class="c1">// 是子元素属性则创建子元素然后生成子节点
+</span><span class="c1"></span>  <span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">child</span> <span class="p">=&gt;</span>
+    <span class="nx">render</span><span class="p">(</span><span class="nx">child</span><span class="p">,</span> <span class="nx">dom</span><span class="p">)</span>
+  <span class="p">)</span>
+
+  <span class="nx">container</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">dom</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kr">const</span> <span class="nx">Didact</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">createElement</span><span class="p">,</span>
+  <span class="nx">render</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="cm">/** @jsx Didact.createElement */</span>
+<span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&#34;foo&#34;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">a</span><span class="p">&gt;</span><span class="nx">bar</span><span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">b</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">)</span>
+<span class="kr">const</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&#34;root&#34;</span><span class="p">)</span>
+<span class="nx">Didact</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span>
+
+</code></pre></div><h2 id="重构-考虑递归遍历问题">重构-考虑递归遍历问题</h2>
+<p>递归遍历子树渲染，如果元素树庞大，则会阻塞浏览器主线程，造成用户无法输入或动画卡顿的后果。</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">child</span> <span class="p">=&gt;</span>
+   <span class="nx">render</span><span class="p">(</span><span class="nx">child</span><span class="p">,</span> <span class="nx">dom</span><span class="p">)</span>
+ <span class="p">)</span>
+
+</code></pre></div><p>解决思路：将浏览器渲染子树工作更加粒化（如何颗粒化，不影响程序运行，这里有一部分工作），通过工作循环（workLoop）确定下一个小的工作单元，采用闲时回调（requestIdleCallback），提供deadline来避免渲染阻塞主线程。</p>
+<p>react 使用 <em><a href="https://github.com/facebook/react/tree/master/packages/scheduler">scheduler package</a></em> 替代requestIdleCallback。</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">let</span> <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="kc">null</span>
+
+<span class="kd">function</span> <span class="nx">workLoop</span><span class="p">(</span><span class="nx">deadline</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="nx">shouldYield</span> <span class="o">=</span> <span class="kc">false</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nx">nextUnitOfWork</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">shouldYield</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="nx">performUnitOfWork</span><span class="p">(</span>
+      <span class="nx">nextUnitOfWork</span>
+    <span class="p">)</span>
+    <span class="nx">shouldYield</span> <span class="o">=</span> <span class="nx">deadline</span><span class="p">.</span><span class="nx">timeRemaining</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">1</span>
+  <span class="p">}</span>
+  <span class="nx">requestIdleCallback</span><span class="p">(</span><span class="nx">workLoop</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">requestIdleCallback</span><span class="p">(</span><span class="nx">workLoop</span><span class="p">)</span>
+
+<span class="kd">function</span> <span class="nx">performUnitOfWork</span><span class="p">(</span><span class="nx">nextUnitOfWork</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// TODO
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="k">while</span> <span class="p">(</span><span class="nx">nextUnitOfWork</span><span class="p">)</span> <span class="p">{</span>    
+  <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="nx">performUnitOfWork</span><span class="p">(</span>   
+    <span class="nx">nextUnitOfWork</span>  
+  <span class="p">)</span> 
+<span class="p">}</span>
+
+</code></pre></div><h2 id="fibers-细化render工作">Fibers-细化render工作</h2>
+<p>performUnitOfWork不仅要执行当前工作，还要返回下一个工作单元，所以为了方便寻找下一个工作单元，从而将渲染子树的工作更加粒化，我们需要一种数据结构：firber tree（纤维树）:</p>
+<p>符合深度优先遍历</p>
+<p><img src="https://pomb.us/static/a88a3ec01855349c14302f6da28e2b0c/ac667/fiber1.png" alt="fiber tree"></p>
+<p>每个react元素对应一个fiber，每个fiber对应一个工作单元，每个工作单元要做三件事：</p>
+<ol>
+<li>
+<p>将正在处理的fiber对应的react元素添加到dom上。</p>
+</li>
+<li>
+<p>为正在处理的fiber对应的react元素的子元素创建fibers。</p>
+</li>
+<li>
+<p>选择工作单元下一个要处理的fiber。</p>
+</li>
+</ol>
+<p>如何选择下一个要处理的fiber，优先级如下:</p>
+<ol>
+<li>
+<p>当前元素子元素 （child）</p>
+</li>
+<li>
+<p>兄弟元素 （sibling）</p>
+</li>
+<li>
+<p>堂亲（uncle）</p>
+</li>
+<li>
+<p>向上查找直到根 （root）</p>
+</li>
+</ol>
+<p>开始前，封装fiber创建dom方法：</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">createDom</span><span class="p">(</span><span class="nx">fiber</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">dom</span> <span class="o">=</span>
+    <span class="nx">fiber</span><span class="p">.</span><span class="nx">type</span> <span class="o">==</span> <span class="s2">&#34;TEXT_ELEMENT&#34;</span>
+      <span class="o">?</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="s2">&#34;&#34;</span><span class="p">)</span>
+      <span class="o">:</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span>
+
+  <span class="kr">const</span> <span class="nx">isProperty</span> <span class="o">=</span> <span class="nx">key</span> <span class="p">=&gt;</span> <span class="nx">key</span> <span class="o">!==</span> <span class="s2">&#34;children&#34;</span>
+  <span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">props</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="nx">isProperty</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">name</span> <span class="p">=&gt;</span> <span class="p">{</span>
+      <span class="nx">dom</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="nx">fiber</span><span class="p">.</span><span class="nx">props</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span>
+    <span class="p">})</span>
+
+  <span class="k">return</span> <span class="nx">dom</span>
+<span class="p">}</span>
+
+</code></pre></div><p>首先，初始化第一个工作单元，即root fiber</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">dom</span><span class="o">:</span> <span class="nx">container</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="nx">children</span><span class="o">:</span> <span class="p">[</span><span class="nx">element</span><span class="p">],</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">let</span> <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="kc">null</span>
+
+</code></pre></div><p>进入工作循环（workLoop）后，当浏览器主线程空闲，则会调用performUnitOfWork处理fiber：</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">performUnitOfWork</span><span class="p">(</span><span class="nx">fiber</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// 1.创建dom元素
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">dom</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">fiber</span><span class="p">.</span><span class="nx">dom</span> <span class="o">=</span> <span class="nx">createDom</span><span class="p">(</span><span class="nx">fiber</span><span class="p">)</span>
+  <span class="p">}</span>
+    
+  <span class="c1">// 添加到父元素上
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">parent</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">fiber</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">dom</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">dom</span><span class="p">)</span>
+  <span class="p">}</span>
+
+  <span class="c1">// 2.为子元素创建fibers  
+</span><span class="c1"></span>  <span class="kr">const</span> <span class="nx">elements</span> <span class="o">=</span> <span class="nx">fiber</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">children</span>
+  <span class="kd">let</span> <span class="nx">index</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="kd">let</span> <span class="nx">prevSibling</span> <span class="o">=</span> <span class="kc">null</span>
+
+  <span class="k">while</span> <span class="p">(</span><span class="nx">index</span> <span class="o">&lt;</span> <span class="nx">elements</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kr">const</span> <span class="nx">element</span> <span class="o">=</span> <span class="nx">elements</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+
+    <span class="kr">const</span> <span class="nx">newFiber</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="nx">type</span><span class="o">:</span> <span class="nx">element</span><span class="p">.</span><span class="nx">type</span><span class="p">,</span>
+      <span class="nx">props</span><span class="o">:</span> <span class="nx">element</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span>
+      <span class="nx">parent</span><span class="o">:</span> <span class="nx">fiber</span><span class="p">,</span>
+      <span class="nx">dom</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// 当前元素的第一个子元素为child;第二个子元素为第一个子元素的sibling，以此类推...
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="nx">index</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">fiber</span><span class="p">.</span><span class="nx">child</span> <span class="o">=</span> <span class="nx">newFiber</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">prevSibling</span><span class="p">.</span><span class="nx">sibling</span> <span class="o">=</span> <span class="nx">newFiber</span>
+    <span class="p">}</span>
+
+    <span class="nx">prevSibling</span> <span class="o">=</span> <span class="nx">newFiber</span>
+    <span class="nx">index</span><span class="o">++</span>
+  <span class="p">}</span>
+    
+  <span class="c1">// 3.寻找下一个工作单元要处理的fiber
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">child</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">fiber</span><span class="p">.</span><span class="nx">child</span>
+  <span class="p">}</span>
+  <span class="kd">let</span> <span class="nx">nextFiber</span> <span class="o">=</span> <span class="nx">fiber</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nx">nextFiber</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">nextFiber</span><span class="p">.</span><span class="nx">sibling</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="nx">nextFiber</span><span class="p">.</span><span class="nx">sibling</span>
+    <span class="p">}</span>
+    <span class="nx">nextFiber</span> <span class="o">=</span> <span class="nx">nextFiber</span><span class="p">.</span><span class="nx">parent</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>以上，就是performUnitOfWork需要做的工作。</p>
+<h2 id="呈现和提交阶段">呈现和提交阶段</h2>
+<p>performUnitOfWork遗留一个问题：</p>
+<p>浏览器可以中断我们的渲染过程，而我们是以fiber为工作单元来处理dom树的渲染，每处理一个fiber则渲染该fiber对应的dom元素，因此我们渲染得到的dom树可能是不完整的，然而我们并不希望用户看到残缺的页面，那么应该如何来处理呢？</p>
+<p>解决思路：我们知道如果找不到下一个fiber，那么我们已经完成fiber树的构建，为了渲染完整的用户页面，我们可以在fiber树构建完成后，一次性渲染整棵dom树。</p>
+<p>保持root fiber的引用：</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">render</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">wipRoot</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">dom</span><span class="o">:</span> <span class="nx">container</span><span class="p">,</span>
+    <span class="nx">props</span><span class="o">:</span> <span class="p">{</span>
+      <span class="nx">children</span><span class="o">:</span> <span class="p">[</span><span class="nx">element</span><span class="p">],</span>
+    <span class="p">},</span>
+  <span class="p">}</span>
+  <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="nx">wipRoot</span>
+<span class="p">}</span>
+
+<span class="kd">let</span> <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="kc">null</span>
+<span class="kd">let</span> <span class="nx">wipRoot</span> <span class="o">=</span> <span class="kc">null</span>
+
+</code></pre></div><p>完成fiber树的构建,开始渲染：</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">workLoop</span><span class="p">(</span><span class="nx">deadline</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="nx">shouldYield</span> <span class="o">=</span> <span class="kc">false</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nx">nextUnitOfWork</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">shouldYield</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">nextUnitOfWork</span> <span class="o">=</span> <span class="nx">performUnitOfWork</span><span class="p">(</span>
+      <span class="nx">nextUnitOfWork</span>
+    <span class="p">)</span>
+    <span class="nx">shouldYield</span> <span class="o">=</span> <span class="nx">deadline</span><span class="p">.</span><span class="nx">timeRemaining</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">1</span>
+  <span class="p">}</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">nextUnitOfWork</span> <span class="o">&amp;&amp;</span> <span class="nx">wipRoot</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">commitRoot</span><span class="p">()</span>
+  <span class="p">}</span>
+
+  <span class="nx">requestIdleCallback</span><span class="p">(</span><span class="nx">workLoop</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div><p>递归遍历渲染整棵dom树:</p>
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">function</span> <span class="nx">commitRoot</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">commitWork</span><span class="p">(</span><span class="nx">wipRoot</span><span class="p">.</span><span class="nx">child</span><span class="p">)</span>
+  <span class="nx">wipRoot</span> <span class="o">=</span> <span class="kc">null</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">commitWork</span><span class="p">(</span><span class="nx">fiber</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">fiber</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span>
+  <span class="p">}</span>
+  <span class="kr">const</span> <span class="nx">domParent</span> <span class="o">=</span> <span class="nx">fiber</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">dom</span>
+  <span class="nx">domParent</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">dom</span><span class="p">)</span>
+  <span class="nx">commitWork</span><span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">child</span><span class="p">)</span>
+  <span class="nx">commitWork</span><span class="p">(</span><span class="nx">fiber</span><span class="p">.</span><span class="nx">sibling</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><h2 id="协调">协调</h2>
+<p>当页面渲染完毕初始化成功，我们又如何处理页面的更新呢?页面更新包括了dom节点的新加，删除，属性更新，这时候reconciliation(协调)出现了，那么是谁和谁进行协调呢，其实就是render函数接收的最新的element生成的fiber树和上一次提交给dom的旧的fiber树做协调。而这里的协调策略是：</p>
+<ol>
+<li>新旧fiber元素类型相同，此时dom节点结构未发生变化，无需删除旧的dom节点，只需要进行属性更新。</li>
+<li>新旧fiber元素类型不同，此时dom节点结构发生改变，需要进行旧的dom节点的删除。</li>
+<li>此外，还需要根据新的fiber元素新增dom节点。</li>
+</ol>
+<h2 id="heading"></h2>
+</div>
+                    <div class="post_footer">
+                        
+                        <div class="meta">
+                            <div class="info">
+                                <span class="field tags">
+                                    <i class="ri-stack-line"></i>
+                                    
+                                    <a href="https://iolh.github.io/tags/react/">react</a>
+                                    
+                                    <a href="https://iolh.github.io/tags/%E5%89%8D%E7%AB%AF/">前端</a>
+                                    
+                                </span>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                
+                <div class="doc_comments"></div>
+                
+            </div>
+        </div>
+    </div>
+    <a id="back_to_top" href="#" class="back_to_top"><i class="ri-arrow-up-s-line"></i></a>
+    <footer class="footer">
+    <div class="powered_by">
+        <a href="https://varkai.com">Designed by VarKai,</a>
+        <a href="http://www.gohugo.io/">Proudly published with Hugo</a>
+    </div>
+
+    <div class="footer_slogan">
+        <span>Copyright © 2021 iolh</span>
+    </div>
+</footer>
+    <script src="https://iolh.github.io/js/jquery-3.5.1.min.js"></script>
+<link href="https://iolh.github.io/css/fancybox.min.css" rel="stylesheet">
+<script src="https://iolh.github.io/js/fancybox.min.js"></script>
+<script src="https://iolh.github.io/js/zozo.js"></script>
+
+
+<script type="text/javascript" async
+    src="https://cdn.bootcss.com/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+        MathJax.Hub.Config({
+            tex2jax: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\[\[', '\]\]']],
+                processEscapes: true,
+                processEnvironments: true,
+                skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                TeX: {
+                    equationNumbers: { autoNumber: "AMS" },
+                    extensions: ["AMSmath.js", "AMSsymbols.js"]
+                }
+            }
+        });
+
+        MathJax.Hub.Queue(function () {
+            
+            
+            
+            var all = MathJax.Hub.getAllJax(), i;
+            for (i = 0; i < all.length; i += 1) {
+                all[i].SourceElement().parentNode.className += ' has-jax';
+            }
+        });
+    </script>
+
+<style>
+    code.has-jax {
+        font: inherit;
+        font-size: 100%;
+        background: inherit;
+        border: inherit;
+        color: #515151;
+    }
+</style>
+
+
+
+</body>
+
+</html>

@@ -1,10 +1,1 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>Tags on 风谷之声</title>
-    <link>https://iolh.github.io/tags/</link>
-    <description>Recent content in Tags on 风谷之声</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://iolh.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
-  </channel>
-</rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on 风谷之声</title><link>https://iolh.github.io/tags/</link><description>Recent content in Tags on 风谷之声</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Mon, 21 Dec 2020 23:24:17 +0000</lastBuildDate><atom:link href="https://iolh.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>react</title><link>https://iolh.github.io/tags/react/</link><pubDate>Mon, 21 Dec 2020 23:24:17 +0000</pubDate><guid>https://iolh.github.io/tags/react/</guid><description/></item><item><title>前端</title><link>https://iolh.github.io/tags/%E5%89%8D%E7%AB%AF/</link><pubDate>Mon, 21 Dec 2020 23:24:17 +0000</pubDate><guid>https://iolh.github.io/tags/%E5%89%8D%E7%AB%AF/</guid><description/></item><item><title>theme</title><link>https://iolh.github.io/tags/theme/</link><pubDate>Sun, 31 Mar 2019 17:49:40 +0800</pubDate><guid>https://iolh.github.io/tags/theme/</guid><description/></item></channel></rss>

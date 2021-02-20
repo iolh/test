@@ -1,8 +1,8 @@
 baseURL = "https://iolh.github.io/"
 languageCode = "zh-cn"
-defaultContentLanguage = "en"
+defaultContentLanguage = "zh-cn"
 title = "风谷之声"                         # site title  # 网站标题
-theme = "hugo-theme-zozo"
+theme = "zozo"
 hasCJKLanguage = true                  # has chinese/japanese/korean ?  # 自动检测是否包含 中文\日文\韩文
 summaryLength = 100
 paginate = 4                           # shows the number of articles  # 首页显示文章数量
